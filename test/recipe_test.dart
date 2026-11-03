@@ -155,7 +155,7 @@ void main() {
         if (r.category != 'Breakfast') return false;
         if (r.difficulty != 'Hard') return false;
         if (!r.favorite) return false;
-        final q = 'pho';
+        const q = 'pho';
         final matchName = r.name.toLowerCase().contains(q);
         final matchNotes = r.notes != null && r.notes!.toLowerCase().contains(q);
         return matchName || matchNotes;
