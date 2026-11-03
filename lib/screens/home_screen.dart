@@ -30,7 +30,7 @@ class HomeScreen extends StatelessWidget {
         // Nếu chưa đăng nhập -> Hiển thị màn hình Home công khai
         return Scaffold(
           appBar: AppBar(
-            title: const Text('BookShelf'),
+            title: const Text('RecipeBox'),
             actions: [
               TextButton(
                 onPressed: () {
@@ -51,13 +51,13 @@ class HomeScreen extends StatelessWidget {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
-                  foregroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.deepOrange,
                 ),
                 child: const Text('Register'),
               ),
               const SizedBox(width: 12),
             ],
-            backgroundColor: Colors.deepPurple,
+            backgroundColor: Colors.deepOrange,
             foregroundColor: Colors.white,
           ),
           body: SingleChildScrollView(
@@ -67,22 +67,22 @@ class HomeScreen extends StatelessWidget {
               children: [
                 const SizedBox(height: 20),
                 const Icon(
-                  Icons.menu_book_rounded,
+                  Icons.soup_kitchen_rounded,
                   size: 80,
-                  color: Colors.deepPurple,
+                  color: Colors.deepOrange,
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'BookShelf',
+                  'RecipeBox',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple,
+                    color: Colors.deepOrange,
                   ),
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Your personal library assistant. Organize, track, and rate your private book collection effortlessly.',
+                  'Your personal recipe collection. Save, organize into meal categories, track cooking difficulty, and mark your favorites effortlessly.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -93,21 +93,21 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 36),
                 // 3 Feature Cards
                 _buildFeatureCard(
-                  icon: Icons.bookmark_add_outlined,
-                  title: 'Track your books',
-                  description: 'Keep a full digital catalog of books you own or plan to read.',
+                  icon: Icons.restaurant_menu_rounded,
+                  title: 'Save your recipes',
+                  description: 'Keep a private collection of recipes you cook or want to try.',
                 ),
                 const SizedBox(height: 16),
                 _buildFeatureCard(
-                  icon: Icons.filter_list_rounded,
-                  title: 'Sort by status',
-                  description: 'Easily organize books into To Read, Reading, and Finished shelves.',
+                  icon: Icons.timer_outlined,
+                  title: 'Sort by cooking time',
+                  description: 'Quickly organize and view recipes ordered by shortest cook time.',
                 ),
                 const SizedBox(height: 16),
                 _buildFeatureCard(
                   icon: Icons.star_rate_rounded,
-                  title: 'Rate your favorites',
-                  description: 'Mark your favorite reads and give ratings to your finished books.',
+                  title: 'Mark your favorites',
+                  description: 'Star your favorite dishes and filter them with a single click.',
                 ),
                 const SizedBox(height: 40),
               ],
@@ -133,10 +133,10 @@ class HomeScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.deepPurple.shade50,
+                color: Colors.deepOrange.shade50,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: Colors.deepPurple, size: 30),
+              child: Icon(icon, color: Colors.deepOrange, size: 30),
             ),
             const SizedBox(width: 16),
             Expanded(

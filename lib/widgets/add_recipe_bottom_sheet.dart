@@ -1,59 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/book_model.dart';
-import '../services/book_service.dart';
+import '../models/recipe_model.dart';
+import '../services/recipe_service.dart';
 
-class AddBookBottomSheet extends StatefulWidget {
-  final BookModel? bookToEdit; // Nếu != null thì là chế độ Chỉnh sửa
+class AddRecipeBottomSheet extends StatefulWidget {
+  final RecipeModel? recipeToEdit; // Nếu != null thì là chế độ Chỉnh sửa
 
-  const AddBookBottomSheet({super.key, this.bookToEdit});
+  const AddRecipeBottomSheet({super.key, this.recipeToEdit});
 
   @override
-  State<AddBookBottomSheet> createState() => _AddBookBottomSheetState();
+  State<AddRecipeBottomSheet> createState() => _AddRecipeBottomSheetState();
 }
 
-class _AddBookBottomSheetState extends State<AddBookBottomSheet> {
+class _AddRecipeBottomSheetState extends State<AddRecipeBottomSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _bookService = BookService();
+  final _recipeService = RecipeService();
 
-  late final TextEditingController _titleController;
-  late final TextEditingController _authorController;
-  late final TextEditingController _ratingController;
+  late final TextEditingController _nameController;
+  late final TextEditingController _cookTimeController;
+  late final TextEditingController _servingsController;
   late final TextEditingController _notesController;
 
-  String? _selectedGenre;
-  String? _selectedStatus;
+  String? _selectedCategory;
+  String? _selectedDifficulty;
 
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
   bool _isSubmitting = false;
   String? _errorMessage;
 
-  final List<String> _genreOptions = ['Choose genre', 'Fiction', 'Non-Fiction', 'Academic', 'Other'];
-  final List<String> _statusOptions = ['Choose status', 'To Read', 'Reading', 'Finished'];
+  final List<String> _categoryOptions = ['Choose category', 'Breakfast', 'Lunch', 'Dinner', 'Dessert'];
+  final List<String> _difficultyOptions = ['Choose difficulty', 'Easy', 'Medium', 'Hard'];
 
   @override
   void initState() {
     super.initState();
-    final book = widget.bookToEdit;
-    _titleController = TextEditingController(text: book?.title ?? '');
-    _authorController = TextEditingController(text: book?.author ?? '');
-    _ratingController = TextEditingController(text: book?.rating != null ? book!.rating.toString() : '');
-    _notesController = TextEditingController(text: book?.notes ?? '');
+    final recipe = widget.recipeToEdit;
+    _nameController = TextEditingController(text: recipe?.name ?? '');
+    _cookTimeController = TextEditingController(text: recipe?.cookTime != null ? recipe!.cookTime.toString() : '');
+    _servingsController = TextEditingController(text: recipe?.servings != null ? recipe!.servings.toString() : '');
+    _notesController = TextEditingController(text: recipe?.notes ?? '');
 
-    _selectedGenre = (book != null && _genreOptions.contains(book.genre))
-        ? book.genre
-        : 'Choose genre';
+    _selectedCategory = (recipe != null && _categoryOptions.contains(recipe.category))
+        ? recipe.category
+        : 'Choose category';
 
-    _selectedStatus = (book != null && _statusOptions.contains(book.status))
-        ? book.status
-        : 'Choose status';
+    _selectedDifficulty = (recipe != null && _difficultyOptions.contains(recipe.difficulty))
+        ? recipe.difficulty
+        : 'Choose difficulty';
   }
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _authorController.dispose();
-    _ratingController.dispose();
+    _nameController.dispose();
+    _cookTimeController.dispose();
+    _servingsController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -73,55 +73,52 @@ class _AddBookBottomSheetState extends State<AddBookBottomSheet> {
       _isSubmitting = true;
     });
 
-    final ratingInt = _ratingController.text.trim().isNotEmpty
-        ? int.tryParse(_ratingController.text.trim())
+    final cookTimeVal = int.parse(_cookTimeController.text.trim());
+    final servingsVal = _servingsController.text.trim().isNotEmpty
+        ? int.tryParse(_servingsController.text.trim())
         : null;
 
-    final newBook = BookModel(
-      id: widget.bookToEdit?.id ?? '',
+    final newRecipe = RecipeModel(
+      id: widget.recipeToEdit?.id ?? '',
       userId: currentUser.uid,
-      title: _titleController.text.trim(),
-      author: _authorController.text.trim(),
-      genre: _selectedGenre!,
-      status: _selectedStatus!,
-      rating: ratingInt,
-      favorite: widget.bookToEdit?.favorite ?? false,
+      name: _nameController.text.trim(),
+      category: _selectedCategory!,
+      difficulty: _selectedDifficulty!,
+      cookTime: cookTimeVal,
+      servings: servingsVal,
+      favorite: widget.recipeToEdit?.favorite ?? false,
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-      createdAt: widget.bookToEdit?.createdAt ?? DateTime.now(),
+      createdAt: widget.recipeToEdit?.createdAt ?? DateTime.now(),
     );
 
     try {
-      if (widget.bookToEdit == null) {
-        await _bookService.addBook(newBook);
+      if (widget.recipeToEdit == null) {
+        await _recipeService.addRecipe(newRecipe);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Book added'),
+              content: Text('Recipe added'),
               backgroundColor: Colors.green,
             ),
           );
           Navigator.pop(context);
         }
       } else {
-        await _bookService.updateBook(newBook);
+        await _recipeService.updateRecipe(newRecipe);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Book updated'),
+              content: Text('Recipe updated'),
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.pop(context, newBook);
+          Navigator.pop(context, newRecipe);
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          if (e is FirebaseException) {
-            _errorMessage = e.message ?? e.toString();
-          } else {
-            _errorMessage = e.toString().replaceFirst('Exception: ', '');
-          }
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
           _isSubmitting = false;
         });
       }
@@ -151,115 +148,117 @@ class _AddBookBottomSheetState extends State<AddBookBottomSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                widget.bookToEdit == null ? 'Add a book' : 'Edit book',
+                widget.recipeToEdit == null ? 'Add a recipe' : 'Edit recipe',
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple,
+                  color: Colors.deepOrange,
                 ),
               ),
               const SizedBox(height: 16),
-              // Title Field
+              // Name Field
               TextFormField(
-                controller: _titleController,
+                controller: _nameController,
                 decoration: const InputDecoration(
-                  labelText: 'Title *',
+                  labelText: 'Name *',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Title is required';
+                    return 'Name is required';
                   }
-                  if (value.trim().length > 100) {
-                    return 'Title must be at most 100 characters';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              // Author Field
-              TextFormField(
-                controller: _authorController,
-                decoration: const InputDecoration(
-                  labelText: 'Author *',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Author is required';
-                  }
-                  if (value.trim().length > 60) {
-                    return 'Author must be at most 60 characters';
+                  if (value.trim().length > 80) {
+                    return 'Name must be at most 80 characters';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 12),
-              // Genre Dropdown
+              // Category Dropdown
               DropdownButtonFormField<String>(
-                initialValue: _selectedGenre,
+                initialValue: _selectedCategory,
                 decoration: const InputDecoration(
-                  labelText: 'Genre *',
+                  labelText: 'Category *',
                   border: OutlineInputBorder(),
                 ),
-                items: _genreOptions.map((genre) {
+                items: _categoryOptions.map((category) {
                   return DropdownMenuItem<String>(
-                    value: genre,
-                    child: Text(genre),
+                    value: category,
+                    child: Text(category),
                   );
                 }).toList(),
                 onChanged: (val) {
                   setState(() {
-                    _selectedGenre = val;
+                    _selectedCategory = val;
                   });
                 },
                 validator: (value) {
-                  if (value == null || value == 'Choose genre') {
-                    return 'Please choose a genre';
+                  if (value == null || value == 'Choose category') {
+                    return 'Please choose a category';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 12),
-              // Status Dropdown
+              // Difficulty Dropdown
               DropdownButtonFormField<String>(
-                initialValue: _selectedStatus,
+                initialValue: _selectedDifficulty,
                 decoration: const InputDecoration(
-                  labelText: 'Status *',
+                  labelText: 'Difficulty *',
                   border: OutlineInputBorder(),
                 ),
-                items: _statusOptions.map((status) {
+                items: _difficultyOptions.map((difficulty) {
                   return DropdownMenuItem<String>(
-                    value: status,
-                    child: Text(status),
+                    value: difficulty,
+                    child: Text(difficulty),
                   );
                 }).toList(),
                 onChanged: (val) {
                   setState(() {
-                    _selectedStatus = val;
+                    _selectedDifficulty = val;
                   });
                 },
                 validator: (value) {
-                  if (value == null || value == 'Choose status') {
-                    return 'Please choose a status';
+                  if (value == null || value == 'Choose difficulty') {
+                    return 'Please choose a difficulty';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 12),
-              // Rating Field (Optional)
+              // Cook time Field
               TextFormField(
-                controller: _ratingController,
+                controller: _cookTimeController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Rating (0 to 5, optional)',
+                  labelText: 'Cook time (minutes) *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Cook time is required';
+                  }
+                  final cookVal = int.tryParse(value.trim());
+                  if (cookVal == null || cookVal < 1 || cookVal > 600) {
+                    return 'Cook time must be a whole number from 1 to 600';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              // Servings Field (Optional)
+              TextFormField(
+                controller: _servingsController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Servings (1 to 20, optional)',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value != null && value.trim().isNotEmpty) {
-                    final ratingVal = int.tryParse(value.trim());
-                    if (ratingVal == null || ratingVal < 0 || ratingVal > 5) {
-                      return 'Rating must be a whole number from 0 to 5';
+                    final servingsVal = int.tryParse(value.trim());
+                    if (servingsVal == null || servingsVal < 1 || servingsVal > 20) {
+                      return 'Servings must be a whole number from 1 to 20';
                     }
                   }
                   return null;
@@ -292,7 +291,7 @@ class _AddBookBottomSheetState extends State<AddBookBottomSheet> {
               ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
+                  backgroundColor: Colors.deepOrange,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
@@ -306,7 +305,7 @@ class _AddBookBottomSheetState extends State<AddBookBottomSheet> {
                         ),
                       )
                     : Text(
-                        widget.bookToEdit == null ? 'Save Book' : 'Save Changes',
+                        widget.recipeToEdit == null ? 'Save Recipe' : 'Save Changes',
                         style: const TextStyle(fontSize: 16),
                       ),
               ),

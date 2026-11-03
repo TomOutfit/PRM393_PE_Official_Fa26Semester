@@ -69,7 +69,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Register'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Colors.deepOrange,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -86,12 +86,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple,
+                  color: Colors.deepOrange,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Sign up to get started with BookShelf',
+                'Sign up to get started with RecipeBox',
                 style: TextStyle(color: Colors.grey.shade600),
               ),
               const SizedBox(height: 32),
@@ -160,7 +160,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _handleRegister,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
+                  backgroundColor: Colors.deepOrange,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -210,7 +210,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: const Text(
                       'Login',
                       style: TextStyle(
-                        color: Colors.deepPurple,
+                        color: Colors.deepOrange,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

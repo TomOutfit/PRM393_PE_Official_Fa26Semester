@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/book_model.dart';
+import '../models/recipe_model.dart';
 import '../services/auth_service.dart';
-import '../services/book_service.dart';
-import '../widgets/add_book_bottom_sheet.dart';
+import '../services/recipe_service.dart';
+import '../widgets/add_recipe_bottom_sheet.dart';
 import 'detail_screen.dart';
 
 class ListScreen extends StatefulWidget {
@@ -15,16 +15,16 @@ class ListScreen extends StatefulWidget {
 
 class _ListScreenState extends State<ListScreen> {
   final AuthService _authService = AuthService();
-  final BookService _bookService = BookService();
+  final RecipeService _recipeService = RecipeService();
   final TextEditingController _searchController = TextEditingController();
 
-  String _selectedGenreFilter = 'All';
-  String _selectedStatusFilter = 'All';
+  String _selectedCategoryFilter = 'All';
+  String _selectedDifficultyFilter = 'All';
   bool _favoritesOnly = false;
   String _searchQuery = '';
 
-  final List<String> _genreFilterOptions = ['All', 'Fiction', 'Non-Fiction', 'Academic', 'Other'];
-  final List<String> _statusFilterOptions = ['All', 'To Read', 'Reading', 'Finished'];
+  final List<String> _categoryFilterOptions = ['All', 'Breakfast', 'Lunch', 'Dinner', 'Dessert'];
+  final List<String> _difficultyFilterOptions = ['All', 'Easy', 'Medium', 'Hard'];
 
   @override
   void dispose() {
@@ -34,22 +34,22 @@ class _ListScreenState extends State<ListScreen> {
 
   void _clearFilters() {
     setState(() {
-      _selectedGenreFilter = 'All';
-      _selectedStatusFilter = 'All';
+      _selectedCategoryFilter = 'All';
+      _selectedDifficultyFilter = 'All';
       _favoritesOnly = false;
       _searchQuery = '';
       _searchController.clear();
     });
   }
 
-  void _showAddBookBottomSheet() {
+  void _showAddRecipeBottomSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) => const AddBookBottomSheet(),
+      builder: (context) => const AddRecipeBottomSheet(),
     );
   }
 
@@ -62,11 +62,11 @@ class _ListScreenState extends State<ListScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            currentUser?.email ?? 'BookShelf',
+            currentUser?.email ?? 'RecipeBox',
             style: const TextStyle(fontSize: 16),
             overflow: TextOverflow.ellipsis,
           ),
-          backgroundColor: Colors.deepPurple,
+          backgroundColor: Colors.deepOrange,
           foregroundColor: Colors.white,
           automaticallyImplyLeading: false, // Bỏ nút back
           actions: [
@@ -85,8 +85,8 @@ class _ListScreenState extends State<ListScreen> {
         ),
         body: currentUser == null
             ? const Center(child: Text('User not authenticated'))
-            : StreamBuilder<List<BookModel>>(
-                stream: _bookService.getBooksStream(currentUser.uid),
+            : StreamBuilder<List<RecipeModel>>(
+                stream: _recipeService.getRecipesStream(currentUser.uid),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -94,32 +94,32 @@ class _ListScreenState extends State<ListScreen> {
 
                   if (snapshot.hasError) {
                     return Center(
-                      child: Text('Error loading books: ${snapshot.error}'),
+                      child: Text('Error loading recipes: ${snapshot.error}'),
                     );
                   }
 
-                  final allBooks = snapshot.data ?? [];
+                  final allRecipes = snapshot.data ?? [];
 
-                  // Lọc sách theo 4 tiêu chí: Genre, Status, Favorites, Search
-                  final filteredBooks = allBooks.where((book) {
-                    // Lọc Genre
-                    if (_selectedGenreFilter != 'All' && book.genre != _selectedGenreFilter) {
+                  // Lọc công thức theo 4 tiêu chí: Category, Difficulty, Favorites Only, Search
+                  final filteredRecipes = allRecipes.where((recipe) {
+                    // Lọc Category
+                    if (_selectedCategoryFilter != 'All' && recipe.category != _selectedCategoryFilter) {
                       return false;
                     }
-                    // Lọc Status
-                    if (_selectedStatusFilter != 'All' && book.status != _selectedStatusFilter) {
+                    // Lọc Difficulty
+                    if (_selectedDifficultyFilter != 'All' && recipe.difficulty != _selectedDifficultyFilter) {
                       return false;
                     }
                     // Lọc Favorites Only
-                    if (_favoritesOnly && !book.favorite) {
+                    if (_favoritesOnly && !recipe.favorite) {
                       return false;
                     }
-                    // Lọc Search (Title hoặc Author)
+                    // Lọc Search (Name hoặc Notes)
                     if (_searchQuery.trim().isNotEmpty) {
                       final q = _searchQuery.trim().toLowerCase();
-                      final matchTitle = book.title.toLowerCase().contains(q);
-                      final matchAuthor = book.author.toLowerCase().contains(q);
-                      if (!matchTitle && !matchAuthor) {
+                      final matchName = recipe.name.toLowerCase().contains(q);
+                      final matchNotes = recipe.notes != null && recipe.notes!.toLowerCase().contains(q);
+                      if (!matchName && !matchNotes) {
                         return false;
                       }
                     }
@@ -131,14 +131,14 @@ class _ListScreenState extends State<ListScreen> {
                       // Vùng Bộ lọc, Tìm kiếm và Nút Clear
                       _buildFilterAndSearchSection(),
                       // Vùng Tổng quan Summary
-                      _buildSummarySection(filteredBooks),
+                      _buildSummarySection(filteredRecipes),
                       const Divider(height: 1),
-                      // Vùng Hiển thị Danh sách Sách
+                      // Vùng Hiển thị Danh sách Công thức
                       Expanded(
-                        child: filteredBooks.isEmpty
+                        child: filteredRecipes.isEmpty
                             ? const Center(
                                 child: Text(
-                                  'No books found',
+                                  'No recipes found',
                                   style: TextStyle(
                                     fontSize: 18,
                                     color: Colors.grey,
@@ -148,15 +148,15 @@ class _ListScreenState extends State<ListScreen> {
                               )
                             : ListView.builder(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                itemCount: filteredBooks.length,
+                                itemCount: filteredRecipes.length,
                                 itemBuilder: (context, index) {
-                                  final book = filteredBooks[index];
+                                  final recipe = filteredRecipes[index];
                                   return Card(
                                     elevation: 2,
                                     margin: const EdgeInsets.symmetric(vertical: 6),
                                     child: ListTile(
                                       title: Text(
-                                        book.title,
+                                        recipe.name,
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
@@ -166,21 +166,21 @@ class _ListScreenState extends State<ListScreen> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           const SizedBox(height: 2),
-                                          Text('Author: ${book.author}'),
+                                          Text('Cook time: ${recipe.cookTime} min'),
                                           const SizedBox(height: 2),
                                           Row(
                                             children: [
                                               Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.deepPurple.shade50,
+                                                  color: Colors.deepOrange.shade50,
                                                   borderRadius: BorderRadius.circular(4),
                                                 ),
                                                 child: Text(
-                                                  book.genre,
+                                                  recipe.category,
                                                   style: const TextStyle(
                                                     fontSize: 12,
-                                                    color: Colors.deepPurple,
+                                                    color: Colors.deepOrange,
                                                     fontWeight: FontWeight.w500,
                                                   ),
                                                 ),
@@ -193,7 +193,7 @@ class _ListScreenState extends State<ListScreen> {
                                                   borderRadius: BorderRadius.circular(4),
                                                 ),
                                                 child: Text(
-                                                  book.status,
+                                                  recipe.difficulty,
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     color: Colors.amber.shade900,
@@ -207,11 +207,11 @@ class _ListScreenState extends State<ListScreen> {
                                       ),
                                       trailing: IconButton(
                                         icon: Icon(
-                                          book.favorite ? Icons.star : Icons.star_border,
-                                          color: book.favorite ? Colors.amber : Colors.grey,
+                                          recipe.favorite ? Icons.star : Icons.star_border,
+                                          color: recipe.favorite ? Colors.amber : Colors.grey,
                                         ),
                                         onPressed: () {
-                                          _bookService.toggleFavorite(book.id, book.favorite);
+                                          _recipeService.toggleFavorite(recipe.id, recipe.favorite);
                                         },
                                         tooltip: 'Toggle favorite',
                                       ),
@@ -219,7 +219,7 @@ class _ListScreenState extends State<ListScreen> {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => DetailScreen(book: book),
+                                            builder: (context) => DetailScreen(recipe: recipe),
                                           ),
                                         );
                                       },
@@ -233,17 +233,17 @@ class _ListScreenState extends State<ListScreen> {
                 },
               ),
         floatingActionButton: FloatingActionButton(
-          onPressed: _showAddBookBottomSheet,
-          backgroundColor: Colors.deepPurple,
+          onPressed: _showAddRecipeBottomSheet,
+          backgroundColor: Colors.deepOrange,
           foregroundColor: Colors.white,
-          tooltip: 'Add Book',
+          tooltip: 'Add Recipe',
           child: const Icon(Icons.add),
         ),
       ),
     );
   }
 
-  /// Widget hiển thị Thanh tìm kiếm, dropdown Genre, Status, switch Favorites và nút Clear
+  /// Widget hiển thị Thanh tìm kiếm, dropdown Category, Difficulty, switch Favorites và nút Clear
   Widget _buildFilterAndSearchSection() {
     return Container(
       color: Colors.grey.shade100,
@@ -254,7 +254,7 @@ class _ListScreenState extends State<ListScreen> {
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search title or author...',
+              hintText: 'Search name or notes...',
               prefixIcon: const Icon(Icons.search),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
@@ -283,50 +283,50 @@ class _ListScreenState extends State<ListScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              // Genre Filter
+              // Category Filter
               Expanded(
                 child: DropdownButtonFormField<String>(
                   // ignore: deprecated_member_use
-                  value: _selectedGenreFilter,
+                  value: _selectedCategoryFilter,
                   decoration: const InputDecoration(
-                    labelText: 'Genre',
+                    labelText: 'Category',
                     contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     border: OutlineInputBorder(),
                     filled: true,
                     fillColor: Colors.white,
                   ),
-                  items: _genreFilterOptions.map((g) {
-                    return DropdownMenuItem(value: g, child: Text(g, style: const TextStyle(fontSize: 13)));
+                  items: _categoryFilterOptions.map((c) {
+                    return DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13)));
                   }).toList(),
                   onChanged: (val) {
                     if (val != null) {
                       setState(() {
-                        _selectedGenreFilter = val;
+                        _selectedCategoryFilter = val;
                       });
                     }
                   },
                 ),
               ),
               const SizedBox(width: 8),
-              // Status Filter
+              // Difficulty Filter
               Expanded(
                 child: DropdownButtonFormField<String>(
                   // ignore: deprecated_member_use
-                  value: _selectedStatusFilter,
+                  value: _selectedDifficultyFilter,
                   decoration: const InputDecoration(
-                    labelText: 'Status',
+                    labelText: 'Difficulty',
                     contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     border: OutlineInputBorder(),
                     filled: true,
                     fillColor: Colors.white,
                   ),
-                  items: _statusFilterOptions.map((s) {
-                    return DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13)));
+                  items: _difficultyFilterOptions.map((d) {
+                    return DropdownMenuItem(value: d, child: Text(d, style: const TextStyle(fontSize: 13)));
                   }).toList(),
                   onChanged: (val) {
                     if (val != null) {
                       setState(() {
-                        _selectedStatusFilter = val;
+                        _selectedDifficultyFilter = val;
                       });
                     }
                   },
@@ -366,23 +366,24 @@ class _ListScreenState extends State<ListScreen> {
     );
   }
 
-  /// Widget tổng quan mô tả số lượng sách, số lượng yêu thích và phân bổ theo Status
-  Widget _buildSummarySection(List<BookModel> books) {
-    final int totalCount = books.length;
-    final int favCount = books.where((b) => b.favorite).length;
+  /// Widget tổng quan mô tả số lượng công thức, số lượng yêu thích, tổng thời gian nấu và phân bổ theo Category
+  Widget _buildSummarySection(List<RecipeModel> recipes) {
+    final int totalCount = recipes.length;
+    final int favCount = recipes.where((r) => r.favorite).length;
+    final int totalTime = recipes.fold(0, (sum, r) => sum + r.cookTime);
 
-    // Đếm theo từng status
-    final Map<String, int> statusCounts = {};
-    for (var book in books) {
-      statusCounts[book.status] = (statusCounts[book.status] ?? 0) + 1;
+    // Đếm theo từng category
+    final Map<String, int> categoryCounts = {};
+    for (var recipe in recipes) {
+      categoryCounts[recipe.category] = (categoryCounts[recipe.category] ?? 0) + 1;
     }
 
-    // Sắp xếp các status xuất hiện: số lượng nhiều nhất xếp trước
-    // Nếu bằng nhau: To Read -> Reading -> Finished
-    final constOrder = ['To Read', 'Reading', 'Finished'];
-    final statusEntries = statusCounts.entries.where((e) => e.value > 0).toList();
+    // Sắp xếp các category xuất hiện: số lượng nhiều nhất xếp trước
+    // Nếu bằng nhau: Breakfast -> Lunch -> Dinner -> Dessert
+    final constOrder = ['Breakfast', 'Lunch', 'Dinner', 'Dessert'];
+    final categoryEntries = categoryCounts.entries.where((e) => e.value > 0).toList();
 
-    statusEntries.sort((a, b) {
+    categoryEntries.sort((a, b) {
       int countCompare = b.value.compareTo(a.value);
       if (countCompare != 0) return countCompare;
       int orderA = constOrder.indexOf(a.key);
@@ -394,7 +395,7 @@ class _ListScreenState extends State<ListScreen> {
 
     return Container(
       width: double.infinity,
-      color: Colors.deepPurple.shade50.withValues(alpha: 0.5),
+      color: Colors.deepOrange.shade50.withValues(alpha: 0.5),
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -402,21 +403,26 @@ class _ListScreenState extends State<ListScreen> {
           Row(
             children: [
               Text(
-                'Books: $totalCount',
+                'Recipes: $totalCount',
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
-              const SizedBox(width: 24),
+              const SizedBox(width: 16),
               Text(
                 'Favorites: $favCount',
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.amber),
               ),
+              const SizedBox(width: 16),
+              Text(
+                'Total time: $totalTime min',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.deepOrange),
+              ),
             ],
           ),
-          if (statusEntries.isNotEmpty) ...[
+          if (categoryEntries.isNotEmpty) ...[
             const SizedBox(height: 6),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: statusEntries.map((e) {
+              children: categoryEntries.map((e) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2.0),
                   child: Text(

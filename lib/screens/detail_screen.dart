@@ -1,85 +1,84 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/book_model.dart';
-import '../services/book_service.dart';
+import '../models/recipe_model.dart';
+import '../services/recipe_service.dart';
 
 class DetailScreen extends StatefulWidget {
-  final BookModel book;
+  final RecipeModel recipe;
 
-  const DetailScreen({super.key, required this.book});
+  const DetailScreen({super.key, required this.recipe});
 
   @override
   State<DetailScreen> createState() => _DetailScreenState();
 }
 
 class _DetailScreenState extends State<DetailScreen> {
-  late BookModel _currentBook;
-  final BookService _bookService = BookService();
+  late RecipeModel _currentRecipe;
+  final RecipeService _recipeService = RecipeService();
   bool _isEditingInline = false;
 
   // Form controllers cho Inline Edit mode
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _titleController;
-  late final TextEditingController _authorController;
-  late final TextEditingController _ratingController;
+  late final TextEditingController _nameController;
+  late final TextEditingController _cookTimeController;
+  late final TextEditingController _servingsController;
   late final TextEditingController _notesController;
 
-  String? _selectedGenre;
-  String? _selectedStatus;
+  String? _selectedCategory;
+  String? _selectedDifficulty;
 
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
   bool _isSaving = false;
   String? _errorMessage;
 
-  final List<String> _genreOptions = ['Choose genre', 'Fiction', 'Non-Fiction', 'Academic', 'Other'];
-  final List<String> _statusOptions = ['Choose status', 'To Read', 'Reading', 'Finished'];
+  final List<String> _categoryOptions = ['Choose category', 'Breakfast', 'Lunch', 'Dinner', 'Dessert'];
+  final List<String> _difficultyOptions = ['Choose difficulty', 'Easy', 'Medium', 'Hard'];
 
   @override
   void initState() {
     super.initState();
-    _currentBook = widget.book;
+    _currentRecipe = widget.recipe;
     _initControllers();
   }
 
   void _initControllers() {
-    _titleController = TextEditingController(text: _currentBook.title);
-    _authorController = TextEditingController(text: _currentBook.author);
-    _ratingController = TextEditingController(
-      text: _currentBook.rating != null ? _currentBook.rating.toString() : '',
+    _nameController = TextEditingController(text: _currentRecipe.name);
+    _cookTimeController = TextEditingController(text: _currentRecipe.cookTime.toString());
+    _servingsController = TextEditingController(
+      text: _currentRecipe.servings != null ? _currentRecipe.servings.toString() : '',
     );
-    _notesController = TextEditingController(text: _currentBook.notes ?? '');
+    _notesController = TextEditingController(text: _currentRecipe.notes ?? '');
 
-    _selectedGenre = _genreOptions.contains(_currentBook.genre)
-        ? _currentBook.genre
-        : 'Choose genre';
+    _selectedCategory = _categoryOptions.contains(_currentRecipe.category)
+        ? _currentRecipe.category
+        : 'Choose category';
 
-    _selectedStatus = _statusOptions.contains(_currentBook.status)
-        ? _currentBook.status
-        : 'Choose status';
+    _selectedDifficulty = _difficultyOptions.contains(_currentRecipe.difficulty)
+        ? _currentRecipe.difficulty
+        : 'Choose difficulty';
   }
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _authorController.dispose();
-    _ratingController.dispose();
+    _nameController.dispose();
+    _cookTimeController.dispose();
+    _servingsController.dispose();
     _notesController.dispose();
     super.dispose();
   }
 
   /// Toggle trạng thái Yêu thích
   Future<void> _toggleFavorite() async {
-    final newFavorite = !_currentBook.favorite;
+    final newFavorite = !_currentRecipe.favorite;
     setState(() {
-      _currentBook = _currentBook.copyWith(favorite: newFavorite);
+      _currentRecipe = _currentRecipe.copyWith(favorite: newFavorite);
     });
 
     try {
-      await _bookService.toggleFavorite(_currentBook.id, !newFavorite);
+      await _recipeService.toggleFavorite(_currentRecipe.id, !newFavorite);
     } catch (e) {
       if (mounted) {
         setState(() {
-          _currentBook = _currentBook.copyWith(favorite: !newFavorite);
+          _currentRecipe = _currentRecipe.copyWith(favorite: !newFavorite);
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to update favorite: $e')),
@@ -88,13 +87,13 @@ class _DetailScreenState extends State<DetailScreen> {
     }
   }
 
-  /// Xóa sách
-  Future<void> _deleteBook() async {
+  /// Xóa công thức
+  Future<void> _deleteRecipe() async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirm Delete'),
-        content: Text('Are you sure you want to delete "${_currentBook.title}"?'),
+        content: Text('Are you sure you want to delete "${_currentRecipe.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -115,14 +114,14 @@ class _DetailScreenState extends State<DetailScreen> {
     if (confirm != true) return;
 
     try {
-      await _bookService.deleteBook(_currentBook.id);
+      await _recipeService.deleteRecipe(_currentRecipe.id);
       if (mounted) {
-        Navigator.of(context).pop(true); // Trả về true để ListScreen cập nhật nếu cần
+        Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete book: $e')),
+          SnackBar(content: Text('Failed to delete recipe: $e')),
         );
       }
     }
@@ -141,30 +140,31 @@ class _DetailScreenState extends State<DetailScreen> {
       _isSaving = true;
     });
 
-    final ratingInt = _ratingController.text.trim().isNotEmpty
-        ? int.tryParse(_ratingController.text.trim())
+    final cookTimeVal = int.parse(_cookTimeController.text.trim());
+    final servingsVal = _servingsController.text.trim().isNotEmpty
+        ? int.tryParse(_servingsController.text.trim())
         : null;
 
-    final updatedBook = _currentBook.copyWith(
-      title: _titleController.text.trim(),
-      author: _authorController.text.trim(),
-      genre: _selectedGenre!,
-      status: _selectedStatus!,
-      rating: ratingInt,
+    final updatedRecipe = _currentRecipe.copyWith(
+      name: _nameController.text.trim(),
+      category: _selectedCategory!,
+      difficulty: _selectedDifficulty!,
+      cookTime: cookTimeVal,
+      servings: servingsVal,
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
     );
 
     try {
-      await _bookService.updateBook(updatedBook);
+      await _recipeService.updateRecipe(updatedRecipe);
       if (mounted) {
         setState(() {
-          _currentBook = updatedBook;
+          _currentRecipe = updatedRecipe;
           _isEditingInline = false;
           _isSaving = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Book updated'),
+            content: Text('Recipe updated'),
             backgroundColor: Colors.green,
           ),
         );
@@ -172,11 +172,7 @@ class _DetailScreenState extends State<DetailScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          if (e is FirebaseException) {
-            _errorMessage = e.message ?? e.toString();
-          } else {
-            _errorMessage = e.toString().replaceFirst('Exception: ', '');
-          }
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
           _isSaving = false;
         });
       }
@@ -195,15 +191,15 @@ class _DetailScreenState extends State<DetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditingInline ? 'Edit Book' : _currentBook.title),
-        backgroundColor: Colors.deepPurple,
+        title: Text(_isEditingInline ? 'Edit Recipe' : _currentRecipe.name),
+        backgroundColor: Colors.deepOrange,
         foregroundColor: Colors.white,
         actions: [
           if (!_isEditingInline) ...[
             IconButton(
               icon: Icon(
-                _currentBook.favorite ? Icons.star : Icons.star_border,
-                color: _currentBook.favorite ? Colors.amber : Colors.white,
+                _currentRecipe.favorite ? Icons.star : Icons.star_border,
+                color: _currentRecipe.favorite ? Colors.amber : Colors.white,
               ),
               onPressed: _toggleFavorite,
               tooltip: 'Favorite',
@@ -219,7 +215,7 @@ class _DetailScreenState extends State<DetailScreen> {
             ),
             IconButton(
               icon: const Icon(Icons.delete),
-              onPressed: _deleteBook,
+              onPressed: _deleteRecipe,
               tooltip: 'Delete',
             ),
           ],
@@ -245,19 +241,19 @@ class _DetailScreenState extends State<DetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _currentBook.title,
+                    _currentRecipe.name,
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.deepPurple,
+                      color: Colors.deepOrange,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'by ${_currentBook.author}',
+                    'Category: ${_currentRecipe.category}',
                     style: TextStyle(
-                      fontSize: 18,
-                      fontStyle: FontStyle.italic,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
                       color: Colors.grey.shade800,
                     ),
                   ),
@@ -267,28 +263,30 @@ class _DetailScreenState extends State<DetailScreen> {
             IconButton(
               iconSize: 32,
               icon: Icon(
-                _currentBook.favorite ? Icons.star : Icons.star_border,
-                color: _currentBook.favorite ? Colors.amber : Colors.grey,
+                _currentRecipe.favorite ? Icons.star : Icons.star_border,
+                color: _currentRecipe.favorite ? Colors.amber : Colors.grey,
               ),
               onPressed: _toggleFavorite,
             ),
           ],
         ),
         const Divider(height: 32),
-        _buildInfoTile('Genre', _currentBook.genre, Icons.category_outlined),
+        _buildInfoTile('Category', _currentRecipe.category, Icons.category_outlined),
         const SizedBox(height: 12),
-        _buildInfoTile('Status', _currentBook.status, Icons.bookmark_outline),
+        _buildInfoTile('Difficulty', _currentRecipe.difficulty, Icons.speed_outlined),
+        const SizedBox(height: 12),
+        _buildInfoTile('Cook Time', '${_currentRecipe.cookTime} min', Icons.timer_outlined),
         const SizedBox(height: 12),
         _buildInfoTile(
-          'Rating',
-          _currentBook.rating != null ? '${_currentBook.rating} / 5 ★' : 'No rating',
-          Icons.star_half_outlined,
+          'Servings',
+          _currentRecipe.servings != null ? '${_currentRecipe.servings}' : 'Not specified',
+          Icons.people_outline,
         ),
         const SizedBox(height: 12),
         _buildInfoTile(
           'Notes',
-          _currentBook.notes != null && _currentBook.notes!.isNotEmpty
-              ? _currentBook.notes!
+          _currentRecipe.notes != null && _currentRecipe.notes!.isNotEmpty
+              ? _currentRecipe.notes!
               : 'No notes added.',
           Icons.note_alt_outlined,
         ),
@@ -303,13 +301,13 @@ class _DetailScreenState extends State<DetailScreen> {
                   });
                 },
                 icon: const Icon(Icons.edit),
-                label: const Text('Edit Book'),
+                label: const Text('Edit Recipe'),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: _deleteBook,
+                onPressed: _deleteRecipe,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
@@ -328,14 +326,14 @@ class _DetailScreenState extends State<DetailScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.deepPurple.shade50.withValues(alpha: 0.5),
+        color: Colors.deepOrange.shade50.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.deepPurple.shade100),
+        border: Border.all(color: Colors.deepOrange.shade100),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.deepPurple),
+          Icon(icon, color: Colors.deepOrange),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -374,95 +372,97 @@ class _DetailScreenState extends State<DetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextFormField(
-            controller: _titleController,
+            controller: _nameController,
             decoration: const InputDecoration(
-              labelText: 'Title *',
+              labelText: 'Name *',
               border: OutlineInputBorder(),
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Title is required';
+                return 'Name is required';
               }
-              if (value.trim().length > 100) {
-                return 'Title must be at most 100 characters';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _authorController,
-            decoration: const InputDecoration(
-              labelText: 'Author *',
-              border: OutlineInputBorder(),
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Author is required';
-              }
-              if (value.trim().length > 60) {
-                return 'Author must be at most 60 characters';
+              if (value.trim().length > 80) {
+                return 'Name must be at most 80 characters';
               }
               return null;
             },
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            initialValue: _selectedGenre,
+            initialValue: _selectedCategory,
             decoration: const InputDecoration(
-              labelText: 'Genre *',
+              labelText: 'Category *',
               border: OutlineInputBorder(),
             ),
-            items: _genreOptions.map((g) {
-              return DropdownMenuItem(value: g, child: Text(g));
+            items: _categoryOptions.map((c) {
+              return DropdownMenuItem(value: c, child: Text(c));
             }).toList(),
             onChanged: (val) {
               setState(() {
-                _selectedGenre = val;
+                _selectedCategory = val;
               });
             },
             validator: (value) {
-              if (value == null || value == 'Choose genre') {
-                return 'Please choose a genre';
+              if (value == null || value == 'Choose category') {
+                return 'Please choose a category';
               }
               return null;
             },
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            initialValue: _selectedStatus,
+            initialValue: _selectedDifficulty,
             decoration: const InputDecoration(
-              labelText: 'Status *',
+              labelText: 'Difficulty *',
               border: OutlineInputBorder(),
             ),
-            items: _statusOptions.map((s) {
-              return DropdownMenuItem(value: s, child: Text(s));
+            items: _difficultyOptions.map((d) {
+              return DropdownMenuItem(value: d, child: Text(d));
             }).toList(),
             onChanged: (val) {
               setState(() {
-                _selectedStatus = val;
+                _selectedDifficulty = val;
               });
             },
             validator: (value) {
-              if (value == null || value == 'Choose status') {
-                return 'Please choose a status';
+              if (value == null || value == 'Choose difficulty') {
+                return 'Please choose a difficulty';
               }
               return null;
             },
           ),
           const SizedBox(height: 12),
           TextFormField(
-            controller: _ratingController,
+            controller: _cookTimeController,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
-              labelText: 'Rating (0 to 5, optional)',
+              labelText: 'Cook time (minutes) *',
+              border: OutlineInputBorder(),
+            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Cook time is required';
+              }
+              final cookVal = int.tryParse(value.trim());
+              if (cookVal == null || cookVal < 1 || cookVal > 600) {
+                return 'Cook time must be a whole number from 1 to 600';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _servingsController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Servings (1 to 20, optional)',
               border: OutlineInputBorder(),
             ),
             validator: (value) {
               if (value != null && value.trim().isNotEmpty) {
-                final ratingVal = int.tryParse(value.trim());
-                if (ratingVal == null || ratingVal < 0 || ratingVal > 5) {
-                  return 'Rating must be a whole number from 0 to 5';
+                final servingsVal = int.tryParse(value.trim());
+                if (servingsVal == null || servingsVal < 1 || servingsVal > 20) {
+                  return 'Servings must be a whole number from 1 to 20';
                 }
               }
               return null;
@@ -507,7 +507,7 @@ class _DetailScreenState extends State<DetailScreen> {
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _saveEdit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
+                    backgroundColor: Colors.deepOrange,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),

@@ -6,24 +6,23 @@ import 'screens/home_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Khởi tạo Firebase Client
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const BookShelfApp());
+  runApp(const RecipeBoxApp());
 }
 
-class BookShelfApp extends StatelessWidget {
-  const BookShelfApp({super.key});
+class RecipeBoxApp extends StatelessWidget {
+  const RecipeBoxApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'BookShelf',
+      title: 'RecipeBox',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
         useMaterial3: true,
       ),
       home: const HomeScreen(),

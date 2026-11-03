@@ -62,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Login'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Colors.deepOrange,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -79,12 +79,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple,
+                  color: Colors.deepOrange,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Sign in to access your book collection',
+                'Sign in to access your recipe collection',
                 style: TextStyle(color: Colors.grey.shade600),
               ),
               const SizedBox(height: 32),
@@ -130,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _handleLogin,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
+                  backgroundColor: Colors.deepOrange,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -180,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Text(
                       'Register',
                       style: TextStyle(
-                        color: Colors.deepPurple,
+                        color: Colors.deepOrange,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
