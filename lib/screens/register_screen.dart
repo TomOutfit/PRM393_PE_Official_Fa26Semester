@@ -50,9 +50,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SnackBar(
             content: Text('Registration successful'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 4),
           ),
         );
-        Navigator.popUntil(context, (route) => route.isFirst);
+        await Future.delayed(const Duration(milliseconds: 1500));
+        if (mounted) {
+          Navigator.popUntil(context, (route) => route.isFirst);
+        }
       }
     } catch (e) {
       if (mounted) {
