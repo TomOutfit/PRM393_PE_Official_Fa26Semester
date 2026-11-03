@@ -1,5 +1,5 @@
-name: bookshelf
-description: "BookShelf - Mobile App for tracking books using Flutter & Firebase"
+name: recipe_box
+description: "RecipeBox - Mobile App for tracking recipes using Flutter & Firebase"
 publish_to: 'none'
 
 version: 1.0.0+1
